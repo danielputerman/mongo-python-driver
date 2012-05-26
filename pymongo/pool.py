@@ -430,6 +430,15 @@ class Pool(BasePool):
     def _get_thread_ident(self):
         return thread.get_ident()
 
+    # After a thread calls start_request() and we assign it a socket, we must
+    # watch the thread to know if it dies without calling end_request so we can
+    # return its socket to the idle pool, self.sockets. We watch for
+    # thread-death using a weakref callback to a thread local. The weakref is
+    # permitted on subclasses of object but not object() itself, so we make
+    # this class.
+    class ThreadVigil(object):
+        pass
+
     def _watch_current_thread(self, callback):
         # In mod_wsgi 2.x, thread state is deleted between HTTP requests,
         # though the thread remains. This mismatch between thread locals and
@@ -440,17 +449,7 @@ class Pool(BasePool):
             return
 
         tid = self._get_thread_ident()
-
-        # After a thread calls start_request() and we assign it a socket, we
-        # must watch the thread to know if it dies without calling end_request
-        # so we can return its socket to the idle pool, self.sockets. We watch
-        # for thread-death using a weakref callback to a thread local. The
-        # weakref is permitted on subclasses of object but not object() itself,
-        # so we make this class.
-        class ThreadVigil(object):
-            pass
-
-        self._local.vigil = vigil = ThreadVigil()
+        self._local.vigil = vigil = Pool.ThreadVigil()
         self._refs[tid] = weakref.ref(vigil, callback)
 
 
