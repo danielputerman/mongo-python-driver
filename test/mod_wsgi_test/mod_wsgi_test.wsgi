@@ -18,12 +18,6 @@
 import os
 import sys
 
-this_path = os.path.dirname(os.path.join(os.getcwd(), __file__))
-
-# Location of PyMongo checkout
-repository_path = os.path.normpath(os.path.join(this_path, '..', '..'))
-sys.path.insert(0, repository_path)
-
 from pymongo.connection import Connection
 
 connection = Connection()
