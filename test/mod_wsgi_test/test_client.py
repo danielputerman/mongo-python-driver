@@ -17,6 +17,7 @@
 
 import sys
 import urllib2
+import thread
 import threading
 import time
 
@@ -40,7 +41,11 @@ def parse_args():
 
     parser.add_option("-q", "--quiet",
         action="store_false", dest="verbose", default=True,
-        help="don't print status messages to stdout")
+        help="Don't print status messages to stdout")
+
+    parser.add_option("-c", "--continue",
+        action="store_true", dest="continue_", default=False,
+        help="Continue after HTTP errors")
 
     try:
         options, (mode, url) = parser.parse_args()
@@ -77,6 +82,11 @@ class URLGetterThread(threading.Thread):
                 get(url)
             except Exception, e:
                 print e
+
+                if not options.continue_:
+                    thread.interrupt_main()
+                    thread.exit()
+
                 self.errors += 1
 
             URLGetterThread.counter_lock.acquire()
@@ -131,6 +141,9 @@ def main(options, mode, url):
                 get(url)
             except Exception, e:
                 print e
+                if not options.continue_:
+                    sys.exit(1)
+
                 errors += 1
 
             if options.verbose and not i % 1000:
