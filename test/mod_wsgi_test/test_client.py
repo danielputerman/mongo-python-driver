@@ -61,7 +61,7 @@ def parse_args():
 
 
 def get(url):
-    assert 'ok' == urllib2.urlopen(url).read().strip()
+    urllib2.urlopen(url).read().strip()
 
 
 class URLGetterThread(threading.Thread):

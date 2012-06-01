@@ -24,6 +24,7 @@ this_path = os.path.dirname(os.path.join(os.getcwd(), __file__))
 repository_path = os.path.normpath(os.path.join(this_path, '..', '..'))
 sys.path.insert(0, repository_path)
 
+import pymongo
 from pymongo.connection import Connection
 
 connection = Connection()
@@ -35,11 +36,17 @@ collection.drop()
 collection.insert([{'i': i} for i in range(ndocs)], safe=True)
 connection.disconnect() # discard main thread's request socket
 
+try:
+    from mod_wsgi import version as mod_wsgi_version
+except:
+    mod_wsgi_version = None
+
 
 def application(environ, start_response):
     results = list(collection.find().batch_size(10))
     assert len(results) == ndocs
-    output = 'ok'
+    output = 'python %s, mod_wsgi %s, pymongo %s' % (
+        sys.version, mod_wsgi_version, pymongo.version)
     response_headers = [('Content-Length', str(len(output)))]
     start_response('200 OK', response_headers)
     return [output]
