@@ -377,9 +377,8 @@ class BasePool(object):
                             # Was thread ever assigned a socket before it died?
                             if request_sock not in (NO_REQUEST, NO_SOCKET_YET):
                                 pool._return_socket(request_sock)
-                    except Exception, e:
+                    except:
                         # Random exceptions on interpreter shutdown.
-                        print e
                         pass
 
                 self._watch_current_thread(on_thread_died)
