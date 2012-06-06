@@ -592,6 +592,9 @@ class _TestPooling(_TestPoolingBase):
             acquired = lock.acquire()
             self.assertTrue(acquired, "Thread is hung")
 
+            # Make sure thread is really gone
+            time.sleep(1)
+
             # Access the thread local from the main thread to trigger the
             # ThreadVigil's delete callback, returning the request socket to
             # the pool.
