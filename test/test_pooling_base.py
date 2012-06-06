@@ -15,6 +15,7 @@
 """Base classes to test built-in connection-pooling with threads or greenlets.
 """
 
+import gc
 import random
 import socket
 import sys
@@ -548,6 +549,9 @@ class _TestPooling(_TestPoolingBase):
         self.assertEqual(1, len(cx_pool.sockets))
 
     def test_socket_reclamation(self):
+        if sys.platform.startswith('java'):
+            raise SkipTest("Jython")
+        
         # Check that if a thread starts a request and dies without ending
         # the request, that the socket is reclaimed into the pool.
         cx_pool = self.get_pool(
@@ -594,6 +598,9 @@ class _TestPooling(_TestPoolingBase):
 
             # Make sure thread is really gone
             time.sleep(1)
+
+            # Necessary on PyPy
+            gc.collect()
 
             # Access the thread local from the main thread to trigger the
             # ThreadVigil's delete callback, returning the request socket to
