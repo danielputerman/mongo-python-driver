@@ -76,9 +76,15 @@ class TestPoolingThreads(_TestPooling, unittest.TestCase):
         lock = thread.allocate_lock()
         lock.acquire()
 
+        sock_ids = []
+
         def run_in_request():
             p.start_request()
-            p.get_socket()
+            sock0 = p.get_socket()
+            sock1 = p.get_socket()
+            sock_ids.extend([id(sock0), id(sock1)])
+            p.maybe_return_socket(sock0)
+            p.maybe_return_socket(sock1)
             p.end_request()
             lock.release()
 
@@ -93,6 +99,7 @@ class TestPoolingThreads(_TestPooling, unittest.TestCase):
                 break
 
         self.assertTrue(acquired, "Thread is hung")
+        self.assertEqual(sock_ids[0], sock_ids[1])
 
     def test_pool_with_fork(self):
         # Test that separate Connections have separate Pools, and that the
