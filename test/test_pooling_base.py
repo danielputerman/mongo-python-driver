@@ -409,6 +409,9 @@ class _TestPooling(_TestPoolingBase):
         self.assertEqual(a_sock,
                          a._Connection__pool.get_socket((a.host, a.port)))
 
+        a_sock.close()
+        b_sock.close()
+
     def test_request(self):
         # Check that Pool gives two different sockets in two calls to
         # get_socket() -- doesn't automatically put us in a request any more
@@ -447,6 +450,9 @@ class _TestPooling(_TestPoolingBase):
 
         # end_request() returned sock2 to pool
         self.assertEqual(sock4, sock2)
+
+        for s in [sock0, sock1, sock2, sock3, sock4, sock5]:
+            s.close()
 
     def test_reset_and_request(self):
         # reset() is called after a fork, or after a socket error. Ensure that
