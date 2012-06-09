@@ -152,6 +152,8 @@ class TestPoolingThreads(_TestPooling, unittest.TestCase):
         self.assertTrue(a_sock.sock.getsockname() != b_sock)
         self.assertTrue(a_sock.sock.getsockname() != c_sock)
         self.assertTrue(b_sock != c_sock)
+
+        # a_sock, created by parent process, is still in the pool
         d_sock = a._Connection__pool.get_socket((a.host, a.port))
         self.assertEqual(a_sock, d_sock)
         d_sock.close()

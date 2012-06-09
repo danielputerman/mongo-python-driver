@@ -500,7 +500,7 @@ class _TestPooling(_TestPoolingBase):
         cx_pool.maybe_return_socket(new_sock_info)
         self.assertEqual(1, len(cx_pool.sockets))
 
-    def test_pool_removes_dead_request_socket(self):
+    def test_pool_removes_dead_request_socket_after_1_sec(self):
         # Test that Pool keeps request going even if a socket dies in request
         cx_pool = self.get_pool((host,port), 10, None, None, False)
         cx_pool.start_request()
@@ -512,6 +512,34 @@ class _TestPooling(_TestPoolingBase):
         sock_info.sock.close()
         cx_pool.maybe_return_socket(sock_info)
         time.sleep(1.1) # trigger _check_closed
+
+        # Although the request socket died, we're still in a request with a
+        # new socket
+        new_sock_info = cx_pool.get_socket()
+        self.assertTrue(cx_pool.in_request())
+        self.assertNotEqual(sock_info, new_sock_info)
+        self.assertEqual(new_sock_info, cx_pool._get_request_state())
+        cx_pool.maybe_return_socket(new_sock_info)
+        self.assertEqual(new_sock_info, cx_pool._get_request_state())
+        self.assertEqual(0, len(cx_pool.sockets))
+
+        cx_pool.end_request()
+        self.assertEqual(1, len(cx_pool.sockets))
+
+    def test_pool_removes_dead_request_socket(self):
+        # Test that Pool keeps request going even if a socket dies in request
+        cx_pool = self.get_pool((host,port), 10, None, None, False)
+        cx_pool.start_request()
+
+        # Get the request socket
+        sock_info = cx_pool.get_socket()
+        self.assertEqual(0, len(cx_pool.sockets))
+        self.assertEqual(sock_info, cx_pool._get_request_state())
+
+        # Unlike in test_pool_removes_dead_request_socket_after_1_sec, we
+        # set sock_info.closed and *don't* wait 1 second
+        sock_info.close()
+        cx_pool.maybe_return_socket(sock_info)
 
         # Although the request socket died, we're still in a request with a
         # new socket
@@ -556,7 +584,7 @@ class _TestPooling(_TestPoolingBase):
 
     def test_socket_reclamation(self):
         if sys.platform.startswith('java'):
-            raise SkipTest("Jython")
+            raise SkipTest("Jython can't do socket reclamation")
         
         # Check that if a thread starts a request and dies without ending
         # the request, that the socket is reclaimed into the pool.
@@ -611,7 +639,7 @@ class _TestPooling(_TestPoolingBase):
             # Access the thread local from the main thread to trigger the
             # ThreadVigil's delete callback, returning the request socket to
             # the pool.
-            #     In Python 2.6 and lesser, a dead thread's locals are deleted
+            # In Python 2.6 and lesser, a dead thread's locals are deleted
             # and those locals' weakref callbacks are fired only when another
             # thread accesses the locals and finds the thread state is stale.
             # This is more or less a bug in Python <= 2.6. Accessing the thread

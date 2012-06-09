@@ -326,7 +326,7 @@ class BasePool(object):
         """
         error = False
 
-        if self.pool_id != sock_info.pool_id:
+        if self.pool_id != sock_info.pool_id or sock_info.closed:
             sock_info.close()
             error = True
 
