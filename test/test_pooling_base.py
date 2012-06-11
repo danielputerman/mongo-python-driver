@@ -633,8 +633,8 @@ class _TestPooling(_TestPoolingBase):
             # Make sure thread is really gone
             time.sleep(1)
 
-            # Necessary on PyPy
-            gc.collect()
+            if 'PyPy' in sys.version:
+                gc.collect()
 
             # Access the thread local from the main thread to trigger the
             # ThreadVigil's delete callback, returning the request socket to
