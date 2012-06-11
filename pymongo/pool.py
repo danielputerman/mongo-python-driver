@@ -287,6 +287,17 @@ class BasePool(object):
         if sock_info not in (NO_REQUEST, NO_SOCKET_YET):
             self._return_socket(sock_info)
 
+    def discard_socket(self, sock_info):
+        """Close and discard the active socket.
+        """
+        if sock_info not in (NO_REQUEST, NO_SOCKET_YET):
+            sock_info.close()
+
+            if sock_info == self._get_request_state():
+                # Discarding request socket; prepare to use a new request
+                # socket on next get_socket().
+                self._set_request_state(NO_SOCKET_YET)
+
     def maybe_return_socket(self, sock_info):
         """Return the socket to the pool unless it's the request socket.
         """
@@ -326,7 +337,10 @@ class BasePool(object):
         """
         error = False
 
-        if self.pool_id != sock_info.pool_id or sock_info.closed:
+        if sock_info.closed:
+            error = True
+
+        elif self.pool_id != sock_info.pool_id:
             sock_info.close()
             error = True
 

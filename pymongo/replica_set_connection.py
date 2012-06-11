@@ -555,8 +555,8 @@ class ReplicaSetConnection(common.BaseObject):
                                           'last_checkout': time.time(),
                                           'max_bson_size': bson_max}
             except (ConnectionFailure, socket.error):
-                if sock_info:
-                    sock_info.close()
+                if mongo:
+                    mongo['pool'].discard_socket(sock_info)
                 continue
             # Only use hosts that are currently in 'secondary' state
             # as readers.
@@ -607,8 +607,8 @@ class ReplicaSetConnection(common.BaseObject):
                     hosts.update([_partition_node(h)
                                   for h in response["passives"]])
             except (ConnectionFailure, socket.error), why:
-                if sock_info:
-                    sock_info.close()
+                if mongo:
+                    mongo['pool'].discard_socket(sock_info)
                 errors.append("%s:%d: %s" % (node[0], node[1], str(why)))
             if hosts:
                 self.__hosts = hosts
@@ -638,8 +638,8 @@ class ReplicaSetConnection(common.BaseObject):
                                       'last_checkout': time.time(),
                                       'max_bson_size': bson_max}
         except (ConnectionFailure, socket.error), why:
-            if sock_info:
-                sock_info.close()
+            if mongo:
+                mongo['pool'].discard_socket(sock_info)
             raise ConnectionFailure("%s:%d: %s" % (host[0], host[1], str(why)))
         
         if mongo and sock_info:
@@ -817,12 +817,12 @@ class ReplicaSetConnection(common.BaseObject):
             mongo['pool'].maybe_return_socket(sock_info)
             return rv
         except(ConnectionFailure, socket.error), why:
-            sock_info.close()
+            mongo['pool'].discard_socket(sock_info)
             if _connection_to_use in (None, -1):
                 self.disconnect()
             raise AutoReconnect(str(why))
         except:
-            sock_info.close()
+            mongo['pool'].discard_socket(sock_info)
             raise
 
     def __send_and_receive(self, mongo, msg, **kwargs):
@@ -847,10 +847,10 @@ class ReplicaSetConnection(common.BaseObject):
             return response
         except (ConnectionFailure, socket.error), why:
             host, port = mongo['pool'].pair
-            sock_info.close()
+            mongo['pool'].discard_socket(sock_info)
             raise AutoReconnect("%s:%d: %s" % (host, port, str(why)))
         except:
-            sock_info.close()
+            mongo['pool'].discard_socket(sock_info)
             raise
 
     def _send_message_with_response(self, msg, _connection_to_use=None,

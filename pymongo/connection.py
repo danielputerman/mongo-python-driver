@@ -759,7 +759,7 @@ class Connection(common.BaseObject):
                 chunk = sock_info.sock.recv(length)
             except:
                 # recv was interrupted
-                sock_info.close()
+                self.__pool.discard_socket(sock_info)
                 raise
             if chunk == EMPTY:
                 raise ConnectionFailure("connection closed")
