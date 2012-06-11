@@ -134,16 +134,7 @@ class BasePool(object):
         # Ignore this race condition -- if many threads are resetting at once,
         # the pool_id will definitely change, which is all we care about.
         self.pool_id += 1
-
-        request_state = self._get_request_state()
         self.pid = os.getpid()
-
-        # Close this thread's request socket. Other threads may be using their
-        # request sockets right now, so don't close them. The next time each
-        # thread tries to use its request socket, it will notice the changed
-        # pool_id and close the socket.
-        if request_state not in (NO_REQUEST, NO_SOCKET_YET):
-            request_state.close()
 
         sockets = None
         try:
@@ -156,12 +147,6 @@ class BasePool(object):
             self.lock.release()
 
         for sock_info in sockets: sock_info.close()
-
-        # If we were in a request before the reset, then delete the request
-        # socket, but resume the request with a new socket the next time
-        # get_socket() is called.
-        if request_state != NO_REQUEST:
-            self._set_request_state(NO_SOCKET_YET)
 
     def create_connection(self, pair):
         """Connect to *pair* and return the socket object.
